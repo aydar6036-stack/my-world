@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MY WORLD — твой город</title>
+<style>
+:root{font-family:Inter,Arial,sans-serif;color:#172033;background:#f5f7fb}
+*{box-sizing:border-box}body{margin:0}button,input{font:inherit}button{cursor:pointer}
+header{height:64px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;background:#fff;border-bottom:1px solid #e9edf4;position:relative;z-index:2}
+.brand{font-size:21px;font-weight:900;letter-spacing:-1px}.brand span{color:#4285f4}
+nav{display:flex;gap:8px}button{border:0;border-radius:12px;padding:10px 14px;background:#edf2fb;color:#20304b;font-weight:650}
+.primary{background:#4285f4;color:#fff}
+#landing{min-height:calc(100svh - 64px);display:flex;align-items:center;justify-content:center;padding:28px 16px;text-align:center}
+.hero{width:min(680px,100%)}.wordmark{font-size:clamp(48px,12vw,88px);font-weight:900;letter-spacing:-5px;margin:0 0 8px}.wordmark span{color:#4285f4}
+.sub{color:#718096;margin:0 0 28px}.search{display:flex;gap:7px;padding:6px;background:white;border:1px solid #e1e6ef;border-radius:18px;box-shadow:0 8px 30px #2438580b}
+.search input{min-width:0;flex:1;border:0;outline:0;padding:12px;background:transparent}.search button{background:#4285f4;color:white}
+.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+.hint{color:#8994a6;font-size:12px;margin-top:34px}
+#matches{margin:12px auto 0;text-align:left;max-width:570px}.match{background:white;padding:13px;border:1px solid #e5eaf2;border-radius:12px;margin-top:7px;text-align:left;width:100%}
+#city{display:none;position:relative;height:calc(100svh - 64px);background:#b9d9ee;overflow:hidden}
+#viewport{position:absolute;inset:0}#viewport canvas{display:block;width:100%;height:100%;touch-action:none}
+.overlay{position:absolute;z-index:1;background:#ffffffed;backdrop-filter:blur(12px);border:1px solid #ffffff;border-radius:15px;box-shadow:0 8px 30px #13243a22;padding:11px 13px}
+.cityhead{top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cityhead b{font-size:14px}.cityfoot{bottom:12px;left:12px;right:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cityfoot small{color:#65738a;max-width:65%;line-height:1.35}
+#residentCard{display:none;top:72px;right:12px;width:min(250px,calc(100% - 24px))}
+#residentCard h3{margin:2px 0 5px}#residentCard p{font-size:13px;color:#65738a;margin:0 0 10px}
+#dialog{display:none;position:fixed;inset:0;background:#10182788;z-index:5;align-items:center;justify-content:center;padding:16px}
+.dialog{background:white;border-radius:20px;padding:22px;width:min(390px,100%);box-shadow:0 20px 70px #0003}
+.dialog h2{margin:0 0 8px}.dialog p{color:#6b778b;font-size:13px;line-height:1.5}
+.dialog input{width:100%;padding:13px;border:1px solid #dce3ed;border-radius:11px;margin:7px 0 12px;outline-color:#4285f4}
+.dialog .row{display:flex;gap:8px}.dialog .row button{flex:1}
+@media(max-width:480px){header{padding:0 12px}.brand{font-size:18px}nav button{font-size:12px;padding:9px}.cityfoot small{font-size:11px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">MY <span>WORLD</span></div>
+  <nav><button onclick="goHome()">Главная</button><button class="primary" onclick="openCity()">🌍 Город</button></nav>
+</header>
+<main id="landing">
+  <section class="hero">
+    <h1 class="wordmark">MY <span>WORLD</span></h1>
+    <p class="sub">Найди свой ник. Найди свой дом. Добро пожаловать в город.</p>
+    <div class="search"><input id="search" placeholder="Найти жителя по @нику" autocomplete="off"><button onclick="findResident()">Найти</button></div>
+    <div id="matches"></div>
+    <div class="actions"><button class="primary" onclick="openCity()">Посмотреть 3D-город</button></div>
+    <p class="hint">Первая версия · Один первый житель · Город будет расти</p>
+  </section>
+</main>
+<section id="city">
+  <div id="viewport"></div>
+  <div class="overlay cityhead"><b>🌍 MY WORLD CITY</b><button onclick="goHome()">← На главную</button></div>
+  <div class="overlay" id="residentCard"><h3 id="rName">@firstresident</h3><p id="rDescription">Первый житель города</p><button class="primary" onclick="focusFirst()">Найти дом</button></div>
+  <div class="overlay cityfoot"><small>Проведи пальцем, чтобы вращать камеру. Используй два пальца для масштаба.</small><button onclick="resetCamera()">Обзор города</button></div>
+</section>
+<div id="dialog">
+ <div class="dialog">
+  <h2>Первый житель</h2>
+  <p>Пока сайт работает в демонстрационном режиме. Введи ник первого жителя — его дом появится в 3D-городе на этом устройстве.</p>
+  <input id="nickname" placeholder="@instagramник" maxlength="30">
+  <input id="wish" placeholder="Пожелание к дому (необязательно)" maxlength="100">
+  <div class="row"><button class="primary" onclick="saveResident()">Сохранить жителя</button><button onclick="closeDialog()">Отмена</button></div>
+ </div>
+</div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
+const $=id=>document.getElementById(id);
+let resident=JSON.parse(localStorage.getItem('mw_first_resident')||'null');
+let scene,camera,renderer,house,ready=false,angle=.65,distance=19,target=new THREE.Vector3(0,0,0);
+let dragging=false,lastX=0,lastY=0,pointers=new Map(),lastPinch=0;
+function showResident(){if(!resident)return;$('rName').textContent=resident.nick;$('rDescription').textContent=resident.wish||'Первый житель города';$('residentCard').style.display='block'}
+window.goHome=()=>{$('landing').style.display='flex';$('city').style.display='none'};
+window.openCity=()=>{$('landing').style.display='none';$('city').style.display='block';if(!ready)init3D();else resize();showResident()};
+window.closeDialog=()=>$('dialog').style.display='none';
+window.resetCamera=()=>{target.set(0,0,0);angle=.65;distance=19};
+window.focusFirst=()=>{target.set(0,0,0);angle=.65;distance=12};
+window.saveResident=()=>{
+ let nick=$('nickname').value.trim();if(!nick){alert('Введи Instagram-ник');return}
+ if(!nick.startsWith('@'))nick='@'+nick;
+ resident={nick,wish:$('wish').value.trim()};localStorage.setItem('mw_first_resident',JSON.stringify(resident));
+ $('dialog').style.display='none';showResident();if(ready)buildHouse();
+};
+window.findResident=()=>{
+ const q=$('search').value.trim().toLowerCase();$('matches').innerHTML='';
+ if(!q)return;
+ if(resident&&resident.nick.toLowerCase()===q){let b=document.createElement('button');b.className='match';b.textContent='🏠 '+resident.nick+' — открыть дом';b.onclick=()=>{openCity();focusFirst()};$('matches').appendChild(b)}
+ else {$('matches').textContent='Пока такого жителя нет в городе.'}
+};
+$('search').addEventListener('keydown',e=>{if(e.key==='Enter')window.findResident()});
+function init3D(){
+ ready=true;scene=new THREE.Scene();scene.background=new THREE.Color(0xb9d9ee);scene.fog=new THREE.Fog(0xb9d9ee,55,130);
+ camera=new THREE.PerspectiveCamera(55,1,.1,250);
+ renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('viewport').appendChild(renderer.domElement);
+ scene.add(new THREE.HemisphereLight(0xffffff,0x78936c,2));
+ const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(25,40,20);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(220,220),new THREE.MeshStandardMaterial({color:0x83b879}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+ const roadmat=new THREE.MeshStandardMaterial({color:0x59636f});
+ for(let p of [-30,0,30]){let a=new THREE.Mesh(new THREE.BoxGeometry(5,.1,220),roadmat);a.position.set(p,.06,0);scene.add(a);let b=new THREE.Mesh(new THREE.BoxGeometry(220,.1,5),roadmat);b.position.set(0,.06,p);scene.add(b)}
+ for(let i=0;i<45;i++){let x=(Math.random()-.5)*100,z=(Math.random()-.5)*100;if(Math.abs(x%30)<7||Math.abs(z%30)<7)continue;makeTree(x,z)}
+ buildHouse();resize();animate();
+ const el=renderer.domElement;
+ el.addEventListener('pointerdown',e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});el.setPointerCapture(e.pointerId);if(pointers.size===1){dragging=true;lastX=e.clientX;lastY=e.clientY}else if(pointers.size===2){let a=[...pointers.values()];lastPinch=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)}});
+ el.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===1&&dragging){angle-=(e.clientX-lastX)*.007;lastY=e.clientY;lastX=e.clientX}else if(pointers.size===2){let a=[...pointers.values()],d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);distance=Math.max(9,Math.min(45,distance+(lastPinch-d)*.045));lastPinch=d}});
+ const end=e=>{pointers.delete(e.pointerId);if(!pointers.size)dragging=false};el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+ el.addEventListener('wheel',e=>distance=Math.max(9,Math.min(45,distance+e.deltaY*.02)),{passive:true});
+}
+function makeTree(x,z){let g=new THREE.Group();let trunk=new THREE.Mesh(new THREE.CylinderGeometry(.15,.22,1.5,7),new THREE.MeshStandardMaterial({color:0x80583b}));trunk.position.y=.75;g.add(trunk);let crown=new THREE.Mesh(new THREE.SphereGeometry(1.25,9,8),new THREE.MeshStandardMaterial({color:0x39834a}));crown.position.y=2;g.add(crown);g.position.set(x,0,z);scene.add(g)}
+function buildHouse(){
+ if(house)scene.remove(house);house=new THREE.Group();
+ const mat=new THREE.MeshStandardMaterial({color:0xe8b98b}),roofmat=new THREE.MeshStandardMaterial({color:0x8c514b});
+ let lot=new THREE.Mesh(new THREE.BoxGeometry(12,.12,12),new THREE.MeshStandardMaterial({color:0x9bc98b}));lot.position.y=.08;house.add(lot);
+ let body=new THREE.Mesh(new THREE.BoxGeometry(5,3.5,4.5),mat);body.position.y=1.85;body.castShadow=true;house.add(body);
+ let roof=new THREE.Mesh(new THREE.ConeGeometry(3.9,2.5,4),roofmat);roof.position.y=4.8;roof.rotation.y=Math.PI/4;roof.castShadow=true;house.add(roof);
+ let door=new THREE.Mesh(new THREE.BoxGeometry(.9,2,.12),new THREE.MeshStandardMaterial({color:0x46647b}));door.position.set(0,1.1,2.31);house.add(door);
+ for(let x of [-1.5,1.5]){let w=new THREE.Mesh(new THREE.BoxGeometry(1,.9,.12),new THREE.MeshStandardMaterial({color:0x9ed8ed,metalness:.15,roughness:.25}));w.position.set(x,2.25,2.32);house.add(w)}
+ let chimney=new THREE.Mesh(new THREE.BoxGeometry(.65,1.5,.65),roofmat);chimney.position.set(1.45,5.1,-.7);house.add(chimney);
+ const board=document.createElement('canvas');board.width=512;board.height=120;const c=board.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,512,120);c.fillStyle='#172033';c.font='bold 42px Arial';c.textAlign='center';c.fillText(resident?.nick||'ПЕРВЫЙ ЖИТЕЛЬ',256,75);
+ let sign=new THREE.Mesh(new THREE.PlaneGeometry(5,1.15),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(board),transparent:true}));sign.position.set(0,6.5,0);house.add(sign);
+ let path=new THREE.Mesh(new THREE.BoxGeometry(1.5,.08,4),new THREE.MeshStandardMaterial({color:0xd8d1bf}));path.position.set(0,.15,4);house.add(path);
+ house.position.set(0,0,0);scene.add(house);
+}
+function resize(){if(!renderer)return;let w=$('viewport').clientWidth,h=$('viewport').clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h)}
+window.addEventListener('resize',resize);
+function animate(){requestAnimationFrame(animate);let pos=new THREE.Vector3(target.x+Math.sin(angle)*distance,Math.max(6,distance*.65),target.z+Math.cos(angle)*distance);camera.position.lerp(pos,.07);camera.lookAt(target);renderer.render(scene,camera)}
+</script>
+</body>
+</html>
