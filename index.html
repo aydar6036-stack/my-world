@@ -68,6 +68,7 @@ nav{display:flex;gap:8px}button{border:0;border-radius:12px;padding:10px 14px;ba
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 const $=id=>document.getElementById(id);
 let resident=JSON.parse(localStorage.getItem('mw_first_resident')||'null');
+if(!resident){resident={nick:'@stroim_g',wish:'Создатель MY WORLD'};localStorage.setItem('mw_first_resident',JSON.stringify(resident));}
 let scene,camera,renderer,house,ready=false,angle=.65,distance=19,target=new THREE.Vector3(0,0,0);
 let dragging=false,lastX=0,lastY=0,pointers=new Map(),lastPinch=0;
 function showResident(){if(!resident)return;$('rName').textContent=resident.nick;$('rDescription').textContent=resident.wish||'Первый житель города';$('residentCard').style.display='block'}
@@ -83,9 +84,11 @@ window.saveResident=()=>{
  $('dialog').style.display='none';showResident();if(ready)buildHouse();
 };
 window.findResident=()=>{
- const q=$('search').value.trim().toLowerCase();$('matches').innerHTML='';
+ const q=$('search').value.trim().toLowerCase().replace(/^@/,'');
+ $('matches').innerHTML='';
  if(!q)return;
- if(resident&&resident.nick.toLowerCase()===q){let b=document.createElement('button');b.className='match';b.textContent='🏠 '+resident.nick+' — открыть дом';b.onclick=()=>{openCity();focusFirst()};$('matches').appendChild(b)}
+ const nick=(resident?.nick||'').toLowerCase().replace(/^@/,'');
+ if(resident&&nick.includes(q)){let b=document.createElement('button');b.className='match';b.textContent='🏠 '+resident.nick+' — открыть дом';b.onclick=()=>{openCity();focusFirst()};$('matches').appendChild(b)}
  else {$('matches').textContent='Пока такого жителя нет в городе.'}
 };
 $('search').addEventListener('keydown',e=>{if(e.key==='Enter')window.findResident()});
