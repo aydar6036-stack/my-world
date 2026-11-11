@@ -99,9 +99,12 @@ function init3D(){
  scene.add(new THREE.HemisphereLight(0xffffff,0x78936c,2));
  const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(25,40,20);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(220,220),new THREE.MeshStandardMaterial({color:0x83b879}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
- const roadmat=new THREE.MeshStandardMaterial({color:0x59636f});
- for(let p of [-30,0,30]){let a=new THREE.Mesh(new THREE.BoxGeometry(5,.1,220),roadmat);a.position.set(p,.06,0);scene.add(a);let b=new THREE.Mesh(new THREE.BoxGeometry(220,.1,5),roadmat);b.position.set(0,.06,p);scene.add(b)}
- for(let i=0;i<45;i++){let x=(Math.random()-.5)*100,z=(Math.random()-.5)*100;if(Math.abs(x%30)<7||Math.abs(z%30)<7)continue;makeTree(x,z)}
+ // Держим свободную площадку вокруг дома: деревья туда не высаживаем.
+ for(let i=0;i<45;i++){
+  let x=(Math.random()-.5)*100,z=(Math.random()-.5)*100;
+  if(Math.abs(x)<9.5&&Math.abs(z)<9.5)continue;
+  makeTree(x,z);
+ }
  buildHouse();resize();animate();
  const el=renderer.domElement;
  el.addEventListener('pointerdown',e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});el.setPointerCapture(e.pointerId);if(pointers.size===1){dragging=true;lastX=e.clientX;lastY=e.clientY}else if(pointers.size===2){let a=[...pointers.values()];lastPinch=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)}});
@@ -121,7 +124,6 @@ function buildHouse(){
  let chimney=new THREE.Mesh(new THREE.BoxGeometry(.65,1.5,.65),roofmat);chimney.position.set(1.45,5.1,-.7);house.add(chimney);
  const board=document.createElement('canvas');board.width=512;board.height=120;const c=board.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,512,120);c.fillStyle='#172033';c.font='bold 42px Arial';c.textAlign='center';c.fillText(resident?.nick||'ПЕРВЫЙ ЖИТЕЛЬ',256,75);
  let sign=new THREE.Mesh(new THREE.PlaneGeometry(5,1.15),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(board),transparent:true}));sign.position.set(0,6.5,0);house.add(sign);
- let path=new THREE.Mesh(new THREE.BoxGeometry(1.5,.08,4),new THREE.MeshStandardMaterial({color:0xd8d1bf}));path.position.set(0,.15,4);house.add(path);
  house.position.set(0,0,0);scene.add(house);
 }
 function resize(){if(!renderer)return;let w=$('viewport').clientWidth,h=$('viewport').clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h)}
