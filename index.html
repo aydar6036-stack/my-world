@@ -99,10 +99,29 @@ function init3D(){
  scene.add(new THREE.HemisphereLight(0xffffff,0x78936c,2));
  const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(25,40,20);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(220,220),new THREE.MeshStandardMaterial({color:0x83b879}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
- // Держим свободную площадку вокруг дома: деревья туда не высаживаем.
- for(let i=0;i<45;i++){
+ // Возвращаем городские дороги, но прокладываем их в стороне от жилых участков.
+ const roadMat=new THREE.MeshStandardMaterial({color:0x555d68,roughness:1});
+ const lineMat=new THREE.MeshStandardMaterial({color:0xf4e6a8,roughness:1});
+ function addRoad(x,z,w,d){
+  const road=new THREE.Mesh(new THREE.BoxGeometry(w,.035,d),roadMat);
+  road.position.set(x,.035,z);road.receiveShadow=true;scene.add(road);
+  // Разметка по центру дороги.
+  const alongX=w>d;
+  const length=alongX?w:d;
+  for(let p=-length/2+2;p<length/2-1;p+=5){
+   const dash=new THREE.Mesh(new THREE.BoxGeometry(alongX?2.2:.12,.045,alongX?.12:2.2),lineMat);
+   dash.position.set(x+(alongX?p:0),.065,z+(alongX?0:p));scene.add(dash);
+  }
+ }
+ // Две пары улиц образуют квартал вокруг центрального участка.
+ addRoad(-17,0,3,110);addRoad(17,0,3,110);
+ addRoad(0,-17,110,3);addRoad(0,17,110,3);
+ // Деревья не попадают ни на дороги, ни на участок дома.
+ for(let i=0;i<65;i++){
   let x=(Math.random()-.5)*100,z=(Math.random()-.5)*100;
-  if(Math.abs(x)<9.5&&Math.abs(z)<9.5)continue;
+  const nearHouse=Math.abs(x)<9.5&&Math.abs(z)<9.5;
+  const onRoad=Math.abs(Math.abs(x)-17)<3.2||Math.abs(Math.abs(z)-17)<3.2;
+  if(nearHouse||onRoad)continue;
   makeTree(x,z);
  }
  buildHouse();resize();animate();
