@@ -133,18 +133,68 @@ function init3D(){
 }
 function makeTree(x,z){let g=new THREE.Group();let trunk=new THREE.Mesh(new THREE.CylinderGeometry(.15,.22,1.5,7),new THREE.MeshStandardMaterial({color:0x80583b}));trunk.position.y=.75;g.add(trunk);let crown=new THREE.Mesh(new THREE.SphereGeometry(1.25,9,8),new THREE.MeshStandardMaterial({color:0x39834a}));crown.position.y=2;g.add(crown);g.position.set(x,0,z);scene.add(g)}
 function buildHouse(){
- if(house)scene.remove(house);house=new THREE.Group();
- const mat=new THREE.MeshStandardMaterial({color:0xe8b98b}),roofmat=new THREE.MeshStandardMaterial({color:0x8c514b});
- let lot=new THREE.Mesh(new THREE.BoxGeometry(12,.12,12),new THREE.MeshStandardMaterial({color:0x9bc98b}));lot.position.y=.08;house.add(lot);
- let body=new THREE.Mesh(new THREE.BoxGeometry(5,3.5,4.5),mat);body.position.y=1.85;body.castShadow=true;house.add(body);
- let roof=new THREE.Mesh(new THREE.ConeGeometry(3.9,2.5,4),roofmat);roof.position.y=4.8;roof.rotation.y=Math.PI/4;roof.castShadow=true;house.add(roof);
- let door=new THREE.Mesh(new THREE.BoxGeometry(.9,2,.12),new THREE.MeshStandardMaterial({color:0x46647b}));door.position.set(0,1.1,2.31);house.add(door);
- for(let x of [-1.5,1.5]){let w=new THREE.Mesh(new THREE.BoxGeometry(1,.9,.12),new THREE.MeshStandardMaterial({color:0x9ed8ed,metalness:.15,roughness:.25}));w.position.set(x,2.25,2.32);house.add(w)}
- let chimney=new THREE.Mesh(new THREE.BoxGeometry(.65,1.5,.65),roofmat);chimney.position.set(1.45,5.1,-.7);house.add(chimney);
- const board=document.createElement('canvas');board.width=512;board.height=120;const c=board.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,512,120);c.fillStyle='#172033';c.font='bold 42px Arial';c.textAlign='center';c.fillText(resident?.nick||'ПЕРВЫЙ ЖИТЕЛЬ',256,75);
- let sign=new THREE.Mesh(new THREE.PlaneGeometry(5,1.15),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(board),transparent:true}));sign.position.set(0,6.5,0);house.add(sign);
+ if(house)scene.remove(house);
+ house=new THREE.Group();
+ const wall=new THREE.MeshStandardMaterial({color:0xd9e0e8,roughness:.85});
+ const side=new THREE.MeshStandardMaterial({color:0xb9c8d8,roughness:.9});
+ const floorMat=new THREE.MeshStandardMaterial({color:0xf1f4f7,roughness:.9});
+ const glass=new THREE.MeshStandardMaterial({color:0x79b9d6,metalness:.15,roughness:.25});
+ const dark=new THREE.MeshStandardMaterial({color:0x536575});
+ // Три соединённые секции жилого комплекса; пока построено по четыре этажа.
+ const sections=[-7,0,7];
+ for(const sx of sections){
+  const block=new THREE.Group();
+  const width=7.2, depth=8.5, floorH=2.25, floors=4;
+  const base=new THREE.Mesh(new THREE.BoxGeometry(width,.35,depth),dark);
+  base.position.y=.18;block.add(base);
+  for(let f=0;f<floors;f++){
+   const y=.35+f*floorH+floorH/2;
+   const slab=new THREE.Mesh(new THREE.BoxGeometry(width,floorH-.08,depth),f%2?side:wall);
+   slab.position.y=y;slab.castShadow=true;slab.receiveShadow=true;block.add(slab);
+   const balcony=new THREE.Mesh(new THREE.BoxGeometry(width+.18,.12,.65),floorMat);
+   balcony.position.set(0,y-.22,depth/2+.18);block.add(balcony);
+   for(let wx of [-2.25,0,2.25]){
+    const win=new THREE.Mesh(new THREE.BoxGeometry(1.25,1.05,.09),glass);
+    win.position.set(wx,y+.12,depth/2+.055);block.add(win);
+    const frame=new THREE.Mesh(new THREE.BoxGeometry(1.38,1.18,.07),dark);
+    frame.position.set(wx,y+.12,depth/2+.015);block.add(frame);
+   }
+   const band=new THREE.Mesh(new THREE.BoxGeometry(width+.08,.12,depth+.08),floorMat);
+   band.position.y=.35+(f+1)*floorH;block.add(band);
+  }
+  // Крыша и технический парапет над четвёртым этажом.
+  const top=new THREE.Mesh(new THREE.BoxGeometry(width+.25,.35,depth+.25),dark);
+  top.position.y=.35+floors*floorH+.16;block.add(top);
+  block.position.x=sx;house.add(block);
+ }
+ // Общие перемычки визуально объединяют три секции в один ЖК.
+ for(const sx of [-3.5,3.5]){
+  const connector=new THREE.Mesh(new THREE.BoxGeometry(1.15,8.65,4.2),wall);
+  connector.position.set(sx,4.25,0);house.add(connector);
+ }
+ // Строительный кран рядом с комплексом.
+ const crane=new THREE.Group();
+ const yellow=new THREE.MeshStandardMaterial({color:0xf2bd32});
+ const mast=new THREE.Mesh(new THREE.BoxGeometry(.38,13,.38),yellow);
+ mast.position.y=6.5;crane.add(mast);
+ const boom=new THREE.Mesh(new THREE.BoxGeometry(11,.28,.3),yellow);
+ boom.position.set(3.8,12.8,0);crane.add(boom);
+ const counter=new THREE.Mesh(new THREE.BoxGeometry(2,.65,.8),dark);
+ counter.position.set(-2,12.35,0);crane.add(counter);
+ const cable=new THREE.Mesh(new THREE.BoxGeometry(.06,3,.06),dark);
+ cable.position.set(6.5,11.15,0);crane.add(cable);
+ const hook=new THREE.Mesh(new THREE.BoxGeometry(.65,.22,.35),yellow);
+ hook.position.set(6.5,9.65,0);crane.add(hook);
+ crane.position.set(15,0,-5);house.add(crane);
+ // Вывеска комплекса перед фасадом.
+ const board=document.createElement('canvas');board.width=512;board.height=128;
+ const c=board.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,512,128);
+ c.fillStyle='#20334b';c.font='bold 48px Arial';c.textAlign='center';c.fillText('ЖК MY WORLD',256,82);
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(8,2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(board),transparent:true}));
+ sign.position.set(0,1.9,4.45);house.add(sign);
  house.position.set(0,0,0);scene.add(house);
 }
+
 function resize(){if(!renderer)return;let w=$('viewport').clientWidth,h=$('viewport').clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h)}
 window.addEventListener('resize',resize);
 function animate(){requestAnimationFrame(animate);let pos=new THREE.Vector3(target.x+Math.sin(angle)*distance,Math.max(6,distance*.65),target.z+Math.cos(angle)*distance);camera.position.lerp(pos,.07);camera.lookAt(target);renderer.render(scene,camera)}
